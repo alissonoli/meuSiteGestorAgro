@@ -1,0 +1,894 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>AgroGest — Gestão de Adubos</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:ital,wght@0,300;0,400;0,500;1,400&display=swap" rel="stylesheet"/>
+<style>
+:root {
+  --verde:        #1e5631;
+  --verde2:       #2d6a4f;
+  --verde3:       #40916c;
+  --verde4:       #74c69d;
+  --bege:         #f5f0e8;
+  --bege2:        #ede7d9;
+  --terra:        #a3622a;
+  --terra2:       #e9c46a;
+  --branco:       #ffffff;
+  --texto:        #1a1a1a;
+  --cinza:        #6b7280;
+  --borda:        #d4c9b5;
+  --erro:         #dc2626;
+  --aviso:        #d97706;
+  --sucesso:      #16a34a;
+  --sidebar-w:    230px;
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+body{font-family:'DM Sans',sans-serif;background:var(--bege);color:var(--texto);min-height:100vh;}
+
+/* ── SIDEBAR ── */
+.sidebar{
+  position:fixed;left:0;top:0;width:var(--sidebar-w);height:100vh;
+  background:var(--verde);display:flex;flex-direction:column;z-index:50;
+  box-shadow:4px 0 20px rgba(0,0,0,.15);
+}
+.logo{padding:28px 22px 24px;border-bottom:1px solid rgba(255,255,255,.12);}
+.logo-row{display:flex;align-items:center;gap:10px;}
+.logo-emoji{font-size:26px;}
+.logo h1{font-family:'Syne',sans-serif;font-size:19px;font-weight:800;color:#fff;letter-spacing:-.5px;}
+.logo p{font-size:10px;color:var(--verde4);letter-spacing:1.5px;text-transform:uppercase;margin-top:2px;}
+.nav{flex:1;padding:18px 0;overflow-y:auto;}
+.nav-item{
+  display:flex;align-items:center;gap:11px;padding:11px 22px;
+  color:rgba(255,255,255,.6);font-size:14px;cursor:pointer;
+  border-left:3px solid transparent;transition:.2s;user-select:none;
+}
+.nav-item:hover{color:#fff;background:rgba(255,255,255,.07);}
+.nav-item.active{color:#fff;background:rgba(255,255,255,.12);border-left-color:var(--verde4);}
+.nav-icon{font-size:17px;width:22px;text-align:center;}
+.sidebar-footer{padding:18px 22px;border-top:1px solid rgba(255,255,255,.12);}
+.sidebar-footer p{font-size:11px;color:rgba(255,255,255,.35);line-height:1.6;}
+
+/* ── MAIN ── */
+.main{margin-left:var(--sidebar-w);padding:36px 40px;min-height:100vh;}
+.page{display:none;}
+.page.active{display:block;animation:fadeIn .25s ease;}
+@keyframes fadeIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+
+/* ── HEADER ── */
+.page-header{margin-bottom:28px;}
+.breadcrumb{font-size:12px;color:var(--cinza);margin-bottom:6px;}
+.breadcrumb b{color:var(--verde3);}
+.page-title{font-family:'Syne',sans-serif;font-size:28px;font-weight:800;letter-spacing:-1px;}
+.page-title span{color:var(--verde3);}
+
+/* ── STATS ── */
+.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:28px;}
+.stat{background:#fff;border:1px solid var(--borda);border-radius:14px;padding:18px;display:flex;align-items:center;gap:14px;}
+.stat-ico{width:46px;height:46px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0;}
+.stat-ico.g{background:rgba(45,106,79,.1);}
+.stat-ico.y{background:rgba(233,196,106,.2);}
+.stat-ico.r{background:rgba(220,38,38,.1);}
+.stat-ico.b{background:rgba(59,130,246,.1);}
+.stat-info p{font-size:11px;color:var(--cinza);margin-bottom:2px;text-transform:uppercase;letter-spacing:.5px;}
+.stat-info strong{font-family:'Syne',sans-serif;font-size:24px;font-weight:800;}
+
+/* ── CARD ── */
+.card{background:#fff;border:1px solid var(--borda);border-radius:16px;overflow:hidden;box-shadow:0 2px 16px rgba(30,86,49,.05);}
+.card-head{background:linear-gradient(135deg,var(--verde) 0%,var(--verde3) 100%);padding:18px 24px;display:flex;align-items:center;gap:12px;}
+.card-head-ico{width:38px;height:38px;background:rgba(255,255,255,.18);border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:18px;}
+.card-head h2{font-family:'Syne',sans-serif;font-size:16px;font-weight:700;color:#fff;}
+.card-head p{font-size:12px;color:rgba(255,255,255,.7);}
+.card-body{padding:24px;}
+.card-foot{padding:16px 24px;border-top:1px solid var(--borda);background:#fafaf7;display:flex;align-items:center;justify-content:flex-end;gap:10px;}
+
+/* ── FORM ── */
+.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;}
+.fg{display:flex;flex-direction:column;gap:5px;}
+.fg.full{grid-column:1/-1;}
+label{font-size:11px;font-weight:600;color:var(--cinza);text-transform:uppercase;letter-spacing:.5px;}
+label .req{color:var(--terra);}
+input,select,textarea{
+  font-family:'DM Sans',sans-serif;font-size:14px;color:var(--texto);
+  background:var(--bege);border:1.5px solid var(--borda);border-radius:9px;
+  padding:10px 13px;transition:.2s;outline:none;width:100%;
+}
+input:focus,select:focus,textarea:focus{border-color:var(--verde3);box-shadow:0 0 0 3px rgba(64,145,108,.12);background:#fff;}
+input.err,select.err{border-color:var(--erro);}
+textarea{resize:vertical;min-height:70px;}
+.err-msg{font-size:11px;color:var(--erro);display:none;}
+.sec-div{grid-column:1/-1;display:flex;align-items:center;gap:10px;margin:6px 0 2px;}
+.sec-div span{font-family:'Syne',sans-serif;font-size:11px;font-weight:700;color:var(--verde2);text-transform:uppercase;letter-spacing:1px;white-space:nowrap;}
+.sec-div::after{content:'';flex:1;height:1px;background:var(--borda);}
+.igrp{display:flex;}
+.igrp input{border-radius:9px 0 0 9px;border-right:none;flex:1;}
+.igrp select{border-radius:0 9px 9px 0;width:80px;background:#ede7d9;flex-shrink:0;}
+
+/* ── BTNS ── */
+.btn{font-family:'DM Sans',sans-serif;font-size:13px;font-weight:600;padding:10px 20px;border-radius:9px;cursor:pointer;border:none;transition:.2s;display:inline-flex;align-items:center;gap:7px;}
+.btn-pri{background:var(--verde);color:#fff;}
+.btn-pri:hover{background:var(--verde3);transform:translateY(-1px);box-shadow:0 6px 18px rgba(30,86,49,.25);}
+.btn-sec{background:transparent;color:var(--cinza);border:1.5px solid var(--borda);}
+.btn-sec:hover{border-color:var(--cinza);color:var(--texto);}
+.btn-danger{background:#fef2f2;color:var(--erro);border:1.5px solid #fecaca;}
+.btn-danger:hover{background:#fee2e2;}
+.btn-warn{background:#fffbeb;color:var(--aviso);border:1.5px solid #fde68a;}
+.btn-sm{padding:6px 13px;font-size:12px;}
+
+/* ── TABLE ── */
+.tbl-wrap{overflow-x:auto;}
+table{width:100%;border-collapse:collapse;font-size:13px;}
+thead th{padding:10px 14px;text-align:left;font-size:11px;font-weight:700;color:var(--cinza);text-transform:uppercase;letter-spacing:.5px;border-bottom:2px solid var(--borda);background:#fafaf7;}
+tbody tr{border-bottom:1px solid var(--bege2);transition:.15s;}
+tbody tr:hover{background:var(--bege);}
+tbody td{padding:11px 14px;vertical-align:middle;}
+.badge{display:inline-flex;align-items:center;gap:4px;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:600;}
+.badge-ok{background:#dcfce7;color:#15803d;}
+.badge-low{background:#fef3c7;color:#92400e;}
+.badge-out{background:#fee2e2;color:#b91c1c;}
+.badge-type{background:rgba(45,106,79,.1);color:var(--verde2);}
+.empty-state{text-align:center;padding:48px 20px;color:var(--cinza);}
+.empty-state .empty-ico{font-size:40px;margin-bottom:10px;}
+.empty-state p{font-size:14px;}
+
+/* ── MOV FORM ── */
+.mov-tipo-btns{display:flex;gap:10px;grid-column:1/-1;}
+.mov-tipo-btn{flex:1;padding:12px;border-radius:10px;border:2px solid var(--borda);background:#fff;cursor:pointer;text-align:center;transition:.2s;font-family:'DM Sans',sans-serif;font-size:14px;font-weight:500;}
+.mov-tipo-btn.entrada.sel{border-color:var(--sucesso);background:#dcfce7;color:var(--sucesso);}
+.mov-tipo-btn.saida.sel{border-color:var(--erro);background:#fee2e2;color:var(--erro);}
+
+/* ── TOAST ── */
+.toast{position:fixed;bottom:28px;right:28px;padding:13px 20px;border-radius:12px;font-size:13px;font-weight:500;display:flex;align-items:center;gap:9px;box-shadow:0 8px 24px rgba(0,0,0,.15);transform:translateY(80px);opacity:0;transition:all .4s cubic-bezier(.34,1.56,.64,1);z-index:999;}
+.toast.show{transform:translateY(0);opacity:1;}
+.toast.s{background:var(--sucesso);color:#fff;}
+.toast.e{background:var(--erro);color:#fff;}
+.toast.w{background:var(--aviso);color:#fff;}
+
+/* ── MODAL ── */
+.overlay{position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:200;display:none;align-items:center;justify-content:center;}
+.overlay.open{display:flex;}
+.modal{background:#fff;border-radius:16px;width:520px;max-width:95vw;max-height:90vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,.2);animation:fadeIn .2s ease;}
+.modal-head{padding:20px 24px;border-bottom:1px solid var(--borda);display:flex;align-items:center;justify-content:space-between;}
+.modal-head h3{font-family:'Syne',sans-serif;font-size:17px;font-weight:700;}
+.modal-close{background:none;border:none;font-size:20px;cursor:pointer;color:var(--cinza);padding:2px 6px;border-radius:6px;}
+.modal-close:hover{background:var(--bege2);}
+.modal-body{padding:24px;}
+.modal-foot{padding:16px 24px;border-top:1px solid var(--borda);display:flex;justify-content:flex-end;gap:10px;}
+
+/* ── ALERTA CARDS ── */
+.alert-list{display:flex;flex-direction:column;gap:10px;}
+.alert-item{display:flex;align-items:center;gap:14px;padding:14px 16px;border-radius:12px;border:1px solid;}
+.alert-item.low{background:#fffbeb;border-color:#fde68a;}
+.alert-item.out{background:#fef2f2;border-color:#fecaca;}
+.alert-item.exp{background:#eff6ff;border-color:#bfdbfe;}
+.alert-ico{font-size:22px;}
+.alert-info p{font-size:13px;font-weight:500;}
+.alert-info span{font-size:11px;color:var(--cinza);}
+
+/* ── HIST ── */
+.hist-item{display:flex;align-items:center;gap:14px;padding:12px 0;border-bottom:1px solid var(--bege2);}
+.hist-dot{width:34px;height:34px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0;}
+.hist-dot.e{background:#dcfce7;}
+.hist-dot.s{background:#fee2e2;}
+.hist-info{flex:1;}
+.hist-info p{font-size:13px;font-weight:500;}
+.hist-info span{font-size:11px;color:var(--cinza);}
+.hist-qty{font-family:'Syne',sans-serif;font-size:14px;font-weight:700;}
+.hist-qty.e{color:var(--sucesso);}
+.hist-qty.s{color:var(--erro);}
+
+/* ── LOGIN ── */
+#tela-login{
+  position:fixed;inset:0;background:var(--verde);z-index:999;
+  display:flex;align-items:center;justify-content:center;
+  background-image:radial-gradient(circle at 20% 50%, rgba(116,198,157,.15) 0%, transparent 50%),
+                   radial-gradient(circle at 80% 20%, rgba(233,196,106,.1) 0%, transparent 40%);
+}
+.login-box{
+  background:#fff;border-radius:20px;padding:40px 36px;width:380px;
+  box-shadow:0 24px 60px rgba(0,0,0,.25);text-align:center;
+}
+.login-logo{font-size:40px;margin-bottom:10px;}
+.login-box h1{font-family:'Syne',sans-serif;font-size:24px;font-weight:800;color:var(--verde);letter-spacing:-.5px;}
+.login-box p{font-size:13px;color:var(--cinza);margin-bottom:28px;margin-top:4px;}
+.login-fields{display:flex;flex-direction:column;gap:14px;text-align:left;}
+.login-fields label{font-size:11px;font-weight:700;color:var(--cinza);text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px;display:block;}
+.login-fields input{width:100%;padding:12px 14px;border:1.5px solid var(--borda);border-radius:10px;font-size:15px;font-family:'DM Sans',sans-serif;outline:none;transition:.2s;background:var(--bege);}
+.login-fields input:focus{border-color:var(--verde3);box-shadow:0 0 0 3px rgba(64,145,108,.12);background:#fff;}
+.login-fields input.err{border-color:var(--erro);}
+.login-err{font-size:12px;color:var(--erro);margin-top:-6px;display:none;}
+.btn-login{width:100%;margin-top:20px;padding:13px;background:var(--verde);color:#fff;border:none;border-radius:10px;font-family:'DM Sans',sans-serif;font-size:15px;font-weight:700;cursor:pointer;transition:.2s;letter-spacing:.3px;}
+.btn-login:hover{background:var(--verde3);transform:translateY(-1px);box-shadow:0 8px 20px rgba(30,86,49,.3);}
+.login-hint{font-size:11px;color:var(--cinza);margin-top:16px;}
+.login-hint b{color:var(--verde2);}
+/* botão sair */
+.btn-sair{display:flex;align-items:center;gap:8px;padding:9px 16px;background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.2);border-radius:8px;color:rgba(255,255,255,.7);font-size:12px;font-family:'DM Sans',sans-serif;cursor:pointer;transition:.2s;margin:0 22px 18px;}
+.btn-sair:hover{background:rgba(255,255,255,.18);color:#fff;}
+
+@media(max-width:768px){
+  .sidebar{width:60px;}
+  .nav-item span:not(.nav-icon){display:none;}
+  .logo h1,.logo p{display:none;}
+  .main{margin-left:60px;padding:20px 16px;}
+  .stats{grid-template-columns:1fr 1fr;}
+  .form-grid{grid-template-columns:1fr;}
+  .fg.full{grid-column:1;}
+  .sec-div{grid-column:1;}
+  .mov-tipo-btns{grid-column:1;}
+}
+</style>
+</head>
+<body>
+
+<!-- ═══ TELA DE LOGIN / CADASTRO ═══ -->
+<div id="tela-login">
+  <div class="login-box">
+    <div class="login-logo">🌱</div>
+    <h1>AgroGest</h1>
+
+    <!-- PAINEL LOGIN -->
+    <div id="painel-login">
+      <p>Faça login para acessar o sistema</p>
+      <div class="login-fields">
+        <div>
+          <label>Usuário</label>
+          <input type="text" id="login-user" placeholder="Digite seu usuário" autocomplete="username"/>
+        </div>
+        <div>
+          <label>Senha</label>
+          <input type="password" id="login-senha" placeholder="Digite sua senha" autocomplete="current-password" onkeydown="if(event.key==='Enter')fazerLogin()"/>
+        </div>
+        <span class="login-err" id="login-err">⚠️ Usuário ou senha incorretos</span>
+      </div>
+      <button class="btn-login" onclick="fazerLogin()">Entrar →</button>
+      <p class="login-hint" style="margin-top:16px;">Não tem conta? <b style="cursor:pointer;color:var(--verde3)" onclick="mostrarCadastro()">Criar conta</b></p>
+    </div>
+
+    <!-- PAINEL CADASTRO -->
+    <div id="painel-cadastro" style="display:none">
+      <p>Crie sua conta para acessar o sistema</p>
+      <div class="login-fields">
+        <div>
+          <label>Nome completo</label>
+          <input type="text" id="cad-nome" placeholder="Seu nome"/>
+        </div>
+        <div>
+          <label>Usuário <span style="color:var(--cinza);font-size:10px">(sem espaços)</span></label>
+          <input type="text" id="cad-user" placeholder="Ex: joao.silva"/>
+        </div>
+        <div>
+          <label>Senha</label>
+          <input type="password" id="cad-senha" placeholder="Mínimo 4 caracteres"/>
+        </div>
+        <div>
+          <label>Confirmar senha</label>
+          <input type="password" id="cad-conf" placeholder="Repita a senha" onkeydown="if(event.key==='Enter')cadastrarUsuario()"/>
+        </div>
+        <span class="login-err" id="cad-err"></span>
+      </div>
+      <button class="btn-login" onclick="cadastrarUsuario()">Criar conta →</button>
+      <p class="login-hint" style="margin-top:16px;">Já tem conta? <b style="cursor:pointer;color:var(--verde3)" onclick="mostrarLogin()">Fazer login</b></p>
+    </div>
+  </div>
+</div>
+
+<!-- SIDEBAR -->
+<aside class="sidebar">
+  <div class="logo">
+    <div class="logo-row"><span class="logo-emoji">🌱</span><h1>AgroGest</h1></div>
+    <p>Gestão Agrícola</p>
+  </div>
+  <nav class="nav">
+    <div class="nav-item active" onclick="go('dash')"><span class="nav-icon">📊</span><span>Dashboard</span></div>
+    <div class="nav-item" onclick="go('adubos')"><span class="nav-icon">🧪</span><span>Adubos</span></div>
+    <div class="nav-item" onclick="go('estoque')"><span class="nav-icon">📦</span><span>Movimentações</span></div>
+    <div class="nav-item" onclick="go('alertas')"><span class="nav-icon">🔔</span><span>Alertas</span></div>
+    <div class="nav-item" onclick="go('historico')"><span class="nav-icon">📋</span><span>Histórico</span></div>
+  </nav>
+  <div class="sidebar-footer"><p>AgroGest v1.0<br><span id="nome-logado" style="color:var(--verde4)"></span></p></div>
+  <button class="btn-sair" onclick="sair()">🚪 Sair</button>
+</aside>
+
+<!-- MAIN -->
+<main class="main">
+
+  <!-- ═══ DASHBOARD ═══ -->
+  <div class="page active" id="page-dash">
+    <div class="page-header">
+      <div class="breadcrumb">Início</div>
+      <h1 class="page-title">Bem-vindo ao <span>AgroGest</span></h1>
+    </div>
+    <div class="stats" id="dash-stats"></div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;">
+      <div class="card">
+        <div class="card-head"><div class="card-head-ico">⚠️</div><div><h2>Alertas Recentes</h2><p>Itens que precisam de atenção</p></div></div>
+        <div class="card-body" id="dash-alertas"></div>
+      </div>
+      <div class="card">
+        <div class="card-head"><div class="card-head-ico">📋</div><div><h2>Últimas Movimentações</h2><p>Entradas e saídas recentes</p></div></div>
+        <div class="card-body" id="dash-hist"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══ ADUBOS ═══ -->
+  <div class="page" id="page-adubos">
+    <div class="page-header" style="display:flex;align-items:flex-start;justify-content:space-between;">
+      <div>
+        <div class="breadcrumb">Adubos</div>
+        <h1 class="page-title"><span>Gestão</span> de Adubos</h1>
+      </div>
+      <button class="btn btn-pri" onclick="abrirModalAdubo()">➕ Novo Adubo</button>
+    </div>
+    <div class="card">
+      <div class="card-head"><div class="card-head-ico">🧪</div><div><h2>Adubos Cadastrados</h2><p>Todos os produtos no sistema</p></div></div>
+      <div class="card-body" style="padding:0;">
+        <div class="tbl-wrap">
+          <table>
+            <thead><tr><th>Nome</th><th>Tipo</th><th>Fórmula NPK</th><th>Estoque</th><th>Mín.</th><th>Status</th><th>Ações</th></tr></thead>
+            <tbody id="tbl-adubos"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══ MOVIMENTAÇÕES ═══ -->
+  <div class="page" id="page-estoque">
+    <div class="page-header">
+      <div class="breadcrumb">Movimentações</div>
+      <h1 class="page-title">Entrada / <span>Saída</span></h1>
+    </div>
+    <div style="display:grid;grid-template-columns:380px 1fr;gap:20px;align-items:start;">
+      <div class="card">
+        <div class="card-head"><div class="card-head-ico">🔄</div><div><h2>Nova Movimentação</h2><p>Registrar entrada ou saída</p></div></div>
+        <div class="card-body">
+          <div class="form-grid">
+            <div class="mov-tipo-btns">
+              <button class="mov-tipo-btn entrada sel" id="btn-entrada" onclick="selTipo('entrada')">📥 Entrada</button>
+              <button class="mov-tipo-btn saida" id="btn-saida" onclick="selTipo('saida')">📤 Saída</button>
+            </div>
+            <div class="fg full">
+              <label>Adubo <span class="req">*</span></label>
+              <select id="mov-adubo"></select>
+              <span class="err-msg" id="err-mov-adubo">Selecione o adubo</span>
+            </div>
+            <div class="fg full">
+              <label>Quantidade <span class="req">*</span></label>
+              <div class="igrp">
+                <input type="number" id="mov-qtd" placeholder="0" min="0.01" step="0.01"/>
+                <select id="mov-un"><option>kg</option><option>ton</option><option>L</option><option>sc</option></select>
+              </div>
+              <span class="err-msg" id="err-mov-qtd">Informe a quantidade</span>
+            </div>
+            <div class="fg full">
+              <label>Motivo / Observação</label>
+              <input type="text" id="mov-motivo" placeholder="Ex: Aplicação talhão A"/>
+            </div>
+            <div class="fg full">
+              <label>Responsável</label>
+              <input type="text" id="mov-resp" placeholder="Nome do responsável"/>
+            </div>
+          </div>
+        </div>
+        <div class="card-foot">
+          <button class="btn btn-pri" onclick="salvarMov()">✅ Registrar</button>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-head"><div class="card-head-ico">📦</div><div><h2>Estoque Atual</h2><p>Quantidades por produto</p></div></div>
+        <div class="card-body" style="padding:0;">
+          <div class="tbl-wrap">
+            <table>
+              <thead><tr><th>Adubo</th><th>Tipo</th><th>Quantidade</th><th>Mín.</th><th>Status</th></tr></thead>
+              <tbody id="tbl-estoque"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══ ALERTAS ═══ -->
+  <div class="page" id="page-alertas">
+    <div class="page-header">
+      <div class="breadcrumb">Alertas</div>
+      <h1 class="page-title">Central de <span>Alertas</span></h1>
+    </div>
+    <div class="card">
+      <div class="card-head"><div class="card-head-ico">🔔</div><div><h2>Itens que precisam de atenção</h2><p>Estoque baixo e próximo do mínimo</p></div></div>
+      <div class="card-body" id="alertas-body"></div>
+    </div>
+  </div>
+
+  <!-- ═══ HISTÓRICO ═══ -->
+  <div class="page" id="page-historico">
+    <div class="page-header" style="display:flex;align-items:flex-start;justify-content:space-between;">
+      <div>
+        <div class="breadcrumb">Histórico</div>
+        <h1 class="page-title">Histórico de <span>Movimentações</span></h1>
+      </div>
+      <button class="btn btn-danger" onclick="limparHistorico()">🗑️ Limpar Histórico</button>
+    </div>
+    <div class="card">
+      <div class="card-body" style="padding:0;">
+        <div class="tbl-wrap">
+          <table>
+            <thead><tr><th>Data</th><th>Adubo</th><th>Tipo</th><th>Quantidade</th><th>Motivo</th><th>Responsável</th></tr></thead>
+            <tbody id="tbl-hist"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</main>
+
+<!-- ═══ MODAL ADUBO ═══ -->
+<div class="overlay" id="modal-adubo-overlay">
+  <div class="modal">
+    <div class="modal-head">
+      <h3 id="modal-titulo">Novo Adubo</h3>
+      <button class="modal-close" onclick="fecharModal()">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-grid">
+        <div class="sec-div"><span>Informações Básicas</span></div>
+        <div class="fg">
+          <label>Nome <span class="req">*</span></label>
+          <input type="text" id="a-nome" placeholder="Ex: Ureia 45%"/>
+          <span class="err-msg" id="err-a-nome">Campo obrigatório</span>
+        </div>
+        <div class="fg">
+          <label>Tipo <span class="req">*</span></label>
+          <select id="a-tipo">
+            <option value="">Selecione...</option>
+            <option>Nitrogenado</option><option>Fosfatado</option><option>Potássico</option>
+            <option>NPK Composto</option><option>Orgânico</option><option>Calcário</option>
+            <option>Micronutrientes</option><option>Outros</option>
+          </select>
+          <span class="err-msg" id="err-a-tipo">Selecione o tipo</span>
+        </div>
+        <div class="fg">
+          <label>Fórmula NPK</label>
+          <input type="text" id="a-npk" placeholder="Ex: 10-10-10"/>
+        </div>
+        <div class="fg">
+          <label>Fabricante</label>
+          <input type="text" id="a-fab" placeholder="Ex: Yara Brasil"/>
+        </div>
+        <div class="sec-div"><span>Estoque</span></div>
+        <div class="fg">
+          <label>Quantidade Inicial <span class="req">*</span></label>
+          <div class="igrp">
+            <input type="number" id="a-qtd" placeholder="0" min="0" step="0.01"/>
+            <select id="a-un"><option>kg</option><option>ton</option><option>L</option><option>sc</option></select>
+          </div>
+          <span class="err-msg" id="err-a-qtd">Informe a quantidade</span>
+        </div>
+        <div class="fg">
+          <label>Estoque Mínimo</label>
+          <input type="number" id="a-min" placeholder="Alerta abaixo de..." min="0" step="0.01"/>
+        </div>
+        <div class="fg full">
+          <label>Observações</label>
+          <textarea id="a-obs" placeholder="Informações adicionais..."></textarea>
+        </div>
+      </div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn btn-sec" onclick="fecharModal()">Cancelar</button>
+      <button class="btn btn-pri" onclick="salvarAdubo()">✅ Salvar</button>
+    </div>
+  </div>
+</div>
+
+<!-- TOAST -->
+<div class="toast" id="toast"></div>
+
+<script>
+// ── LOGIN / USUÁRIOS ──
+function getUsuarios(){ return JSON.parse(localStorage.getItem('ag_usuarios')||'[]'); }
+function setUsuarios(u){ localStorage.setItem('ag_usuarios', JSON.stringify(u)); }
+
+function mostrarCadastro(){
+  document.getElementById('painel-login').style.display='none';
+  document.getElementById('painel-cadastro').style.display='block';
+  limparCamposLogin();
+}
+function mostrarLogin(){
+  document.getElementById('painel-cadastro').style.display='none';
+  document.getElementById('painel-login').style.display='block';
+  limparCamposLogin();
+}
+function limparCamposLogin(){
+  ['login-user','login-senha','cad-nome','cad-user','cad-senha','cad-conf'].forEach(id=>{
+    const el=document.getElementById(id); if(el){el.value='';el.classList.remove('err');}
+  });
+  document.getElementById('login-err').style.display='none';
+  document.getElementById('cad-err').style.display='none';
+}
+
+function fazerLogin(){
+  const u=document.getElementById('login-user').value.trim();
+  const s=document.getElementById('login-senha').value;
+  const err=document.getElementById('login-err');
+  const usuarios=getUsuarios();
+  const achou=usuarios.find(x=>x.usuario===u && x.senha===s);
+  if(achou){
+    sessionStorage.setItem('ag_logado','1');
+    sessionStorage.setItem('ag_user_nome', achou.nome||achou.usuario);
+    document.getElementById('tela-login').style.display='none';
+    document.getElementById('nome-logado').textContent='👤 '+( achou.nome||achou.usuario);
+    err.style.display='none';
+  } else {
+    err.textContent='⚠️ Usuário ou senha incorretos';
+    err.style.display='block';
+    document.getElementById('login-senha').value='';
+  }
+}
+
+function cadastrarUsuario(){
+  const nome  = document.getElementById('cad-nome').value.trim();
+  const user  = document.getElementById('cad-user').value.trim().toLowerCase().replace(/\s/g,'');
+  const senha = document.getElementById('cad-senha').value;
+  const conf  = document.getElementById('cad-conf').value;
+  const err   = document.getElementById('cad-err');
+
+  if(!nome||!user||!senha||!conf){
+    err.textContent='⚠️ Preencha todos os campos'; err.style.display='block'; return;
+  }
+  if(senha.length<4){
+    err.textContent='⚠️ Senha deve ter pelo menos 4 caracteres'; err.style.display='block'; return;
+  }
+  if(senha!==conf){
+    err.textContent='⚠️ As senhas não coincidem'; err.style.display='block'; return;
+  }
+  const usuarios=getUsuarios();
+  if(usuarios.find(x=>x.usuario===user)){
+    err.textContent='⚠️ Este usuário já existe'; err.style.display='block'; return;
+  }
+  usuarios.push({nome, usuario:user, senha});
+  setUsuarios(usuarios);
+  err.style.display='none';
+  mostrarLogin();
+  // preenche login automaticamente
+  document.getElementById('login-user').value=user;
+  toast('Conta criada! Faça login para entrar 🎉','s');
+}
+
+function sair(){
+  if(!confirm('Deseja sair do sistema?')) return;
+  sessionStorage.removeItem('ag_logado');
+  sessionStorage.removeItem('ag_user_nome');
+  limparCamposLogin();
+  mostrarLogin();
+  document.getElementById('tela-login').style.display='flex';
+}
+
+// Verifica se já está logado
+if(sessionStorage.getItem('ag_logado')==='1'){
+  document.getElementById('tela-login').style.display='none';
+  const n=sessionStorage.getItem('ag_user_nome');
+  if(n) document.getElementById('nome-logado').textContent='👤 '+n;
+}
+// Se não tem nenhum usuário cadastrado, já abre no cadastro
+if(!getUsuarios().length){ mostrarCadastro(); }
+
+// ── ESTADO ──
+let db = {
+  adubos: JSON.parse(localStorage.getItem('ag_adubos')||'[]'),
+  movs:   JSON.parse(localStorage.getItem('ag_movs')||'[]'),
+};
+let editId = null;
+let movTipo = 'entrada';
+
+function save(){
+  localStorage.setItem('ag_adubos', JSON.stringify(db.adubos));
+  localStorage.setItem('ag_movs',   JSON.stringify(db.movs));
+}
+
+// ── NAVEGAÇÃO ──
+function go(pg){
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
+  document.getElementById('page-'+pg).classList.add('active');
+  const idx = {dash:0,adubos:1,estoque:2,alertas:3,historico:4};
+  document.querySelectorAll('.nav-item')[idx[pg]].classList.add('active');
+  render(pg);
+}
+
+// ── RENDER ──
+function render(pg){
+  if(pg==='dash')      renderDash();
+  if(pg==='adubos')    renderAdubos();
+  if(pg==='estoque')   renderEstoque();
+  if(pg==='alertas')   renderAlertas();
+  if(pg==='historico') renderHistorico();
+}
+
+function statusAdubo(a){
+  if(a.qtd<=0) return {cls:'badge-out',txt:'⛔ Sem estoque'};
+  if(a.qtd<=a.min) return {cls:'badge-low',txt:'⚠️ Estoque baixo'};
+  return {cls:'badge-ok',txt:'✅ OK'};
+}
+
+// ── DASHBOARD ──
+function renderDash(){
+  const total = db.adubos.length;
+  const baixo = db.adubos.filter(a=>a.qtd>0&&a.qtd<=a.min).length;
+  const sem   = db.adubos.filter(a=>a.qtd<=0).length;
+  const movs  = db.movs.length;
+  document.getElementById('dash-stats').innerHTML=`
+    <div class="stat"><div class="stat-ico g">🧪</div><div class="stat-info"><p>Total de Adubos</p><strong>${total}</strong></div></div>
+    <div class="stat"><div class="stat-ico y">⚠️</div><div class="stat-info"><p>Estoque Baixo</p><strong>${baixo}</strong></div></div>
+    <div class="stat"><div class="stat-ico r">⛔</div><div class="stat-info"><p>Sem Estoque</p><strong>${sem}</strong></div></div>
+    <div class="stat"><div class="stat-ico b">🔄</div><div class="stat-info"><p>Movimentações</p><strong>${movs}</strong></div></div>
+  `;
+  // alertas
+  const alerts = db.adubos.filter(a=>a.qtd<=a.min);
+  const da = document.getElementById('dash-alertas');
+  if(!alerts.length){ da.innerHTML='<div class="empty-state"><div class="empty-ico">✅</div><p>Nenhum alerta no momento</p></div>'; }
+  else {
+    da.innerHTML='<div class="alert-list">'+alerts.slice(0,4).map(a=>{
+      const cls = a.qtd<=0?'out':'low';
+      return `<div class="alert-item ${cls}"><span class="alert-ico">${a.qtd<=0?'⛔':'⚠️'}</span><div class="alert-info"><p>${a.nome}</p><span>Estoque: ${a.qtd} ${a.un} | Mín: ${a.min} ${a.un}</span></div></div>`;
+    }).join('')+'</div>';
+  }
+  // hist
+  const dh = document.getElementById('dash-hist');
+  const ultimas = [...db.movs].reverse().slice(0,5);
+  if(!ultimas.length){ dh.innerHTML='<div class="empty-state"><div class="empty-ico">📋</div><p>Nenhuma movimentação ainda</p></div>'; }
+  else {
+    dh.innerHTML = ultimas.map(m=>`
+      <div class="hist-item">
+        <div class="hist-dot ${m.tipo==='entrada'?'e':'s'}">${m.tipo==='entrada'?'📥':'📤'}</div>
+        <div class="hist-info"><p>${m.aduboNome}</p><span>${m.data} ${m.motivo?'· '+m.motivo:''}</span></div>
+        <div class="hist-qty ${m.tipo==='entrada'?'e':'s'}">${m.tipo==='entrada'?'+':'-'}${m.qtd} ${m.un}</div>
+      </div>`).join('');
+  }
+}
+
+// ── ADUBOS ──
+function renderAdubos(){
+  const tbody = document.getElementById('tbl-adubos');
+  if(!db.adubos.length){
+    tbody.innerHTML=`<tr><td colspan="7"><div class="empty-state"><div class="empty-ico">🧪</div><p>Nenhum adubo cadastrado ainda.<br>Clique em "Novo Adubo" para começar.</p></div></td></tr>`;
+    return;
+  }
+  tbody.innerHTML = db.adubos.map(a=>{
+    const s = statusAdubo(a);
+    return `<tr>
+      <td><strong>${a.nome}</strong>${a.fab?`<br><span style="font-size:11px;color:var(--cinza)">${a.fab}</span>`:''}}</td>
+      <td><span class="badge badge-type">${a.tipo}</span></td>
+      <td>${a.npk||'—'}</td>
+      <td><strong>${a.qtd}</strong> ${a.un}</td>
+      <td>${a.min} ${a.un}</td>
+      <td><span class="badge ${s.cls}">${s.txt}</span></td>
+      <td style="display:flex;gap:6px;">
+        <button class="btn btn-warn btn-sm" onclick="editarAdubo(${a.id})">✏️</button>
+        <button class="btn btn-danger btn-sm" onclick="excluirAdubo(${a.id})">🗑️</button>
+      </td>
+    </tr>`;
+  }).join('');
+}
+
+// ── ESTOQUE ──
+function renderEstoque(){
+  // popular select
+  const sel = document.getElementById('mov-adubo');
+  sel.innerHTML='<option value="">Selecione o adubo...</option>'+
+    db.adubos.map(a=>`<option value="${a.id}">${a.nome} (${a.qtd} ${a.un})</option>`).join('');
+  // tabela
+  const tbody = document.getElementById('tbl-estoque');
+  if(!db.adubos.length){
+    tbody.innerHTML=`<tr><td colspan="5"><div class="empty-state"><div class="empty-ico">📦</div><p>Nenhum adubo cadastrado</p></div></td></tr>`;
+    return;
+  }
+  tbody.innerHTML = db.adubos.map(a=>{
+    const s=statusAdubo(a);
+    return `<tr>
+      <td><strong>${a.nome}</strong></td>
+      <td><span class="badge badge-type">${a.tipo}</span></td>
+      <td><strong>${a.qtd}</strong> ${a.un}</td>
+      <td>${a.min} ${a.un}</td>
+      <td><span class="badge ${s.cls}">${s.txt}</span></td>
+    </tr>`;
+  }).join('');
+}
+
+// ── ALERTAS ──
+function renderAlertas(){
+  const body = document.getElementById('alertas-body');
+  const items = db.adubos.filter(a=>a.qtd<=a.min);
+  if(!items.length){
+    body.innerHTML='<div class="empty-state"><div class="empty-ico">✅</div><p>Tudo certo! Nenhum alerta no momento.</p></div>';
+    return;
+  }
+  body.innerHTML='<div class="alert-list">'+items.map(a=>{
+    const sem = a.qtd<=0;
+    return `<div class="alert-item ${sem?'out':'low'}">
+      <span class="alert-ico">${sem?'⛔':'⚠️'}</span>
+      <div class="alert-info" style="flex:1">
+        <p>${a.nome} <span class="badge badge-type" style="margin-left:6px">${a.tipo}</span></p>
+        <span>Estoque atual: <strong>${a.qtd} ${a.un}</strong> | Mínimo: ${a.min} ${a.un}</span>
+      </div>
+      <button class="btn btn-pri btn-sm" onclick="go('estoque')">📥 Repor</button>
+    </div>`;
+  }).join('')+'</div>';
+}
+
+// ── HISTÓRICO ──
+function renderHistorico(){
+  const tbody = document.getElementById('tbl-hist');
+  const lista = [...db.movs].reverse();
+  if(!lista.length){
+    tbody.innerHTML=`<tr><td colspan="6"><div class="empty-state"><div class="empty-ico">📋</div><p>Nenhuma movimentação registrada</p></div></td></tr>`;
+    return;
+  }
+  tbody.innerHTML = lista.map(m=>`<tr>
+    <td>${m.data}</td>
+    <td>${m.aduboNome}</td>
+    <td><span class="badge ${m.tipo==='entrada'?'badge-ok':'badge-out'}">${m.tipo==='entrada'?'📥 Entrada':'📤 Saída'}</span></td>
+    <td><strong>${m.qtd}</strong> ${m.un}</td>
+    <td>${m.motivo||'—'}</td>
+    <td>${m.resp||'—'}</td>
+  </tr>`).join('');
+}
+
+// ── MODAL ADUBO ──
+function abrirModalAdubo(id=null){
+  editId=id;
+  document.getElementById('modal-titulo').textContent = id?'Editar Adubo':'Novo Adubo';
+  limparModalAdubo();
+  if(id){
+    const a=db.adubos.find(x=>x.id===id);
+    if(a){
+      document.getElementById('a-nome').value=a.nome;
+      document.getElementById('a-tipo').value=a.tipo;
+      document.getElementById('a-npk').value=a.npk||'';
+      document.getElementById('a-fab').value=a.fab||'';
+      document.getElementById('a-qtd').value=a.qtd;
+      document.getElementById('a-un').value=a.un;
+      document.getElementById('a-min').value=a.min||0;
+      document.getElementById('a-obs').value=a.obs||'';
+    }
+  }
+  document.getElementById('modal-adubo-overlay').classList.add('open');
+}
+function fecharModal(){
+  document.getElementById('modal-adubo-overlay').classList.remove('open');
+  editId=null;
+}
+function limparModalAdubo(){
+  ['a-nome','a-tipo','a-npk','a-fab','a-obs'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('a-qtd').value='';
+  document.getElementById('a-min').value='';
+  document.getElementById('a-un').value='kg';
+  document.querySelectorAll('.err-msg').forEach(e=>e.style.display='none');
+  document.querySelectorAll('.modal input,.modal select').forEach(e=>e.classList.remove('err'));
+}
+
+function salvarAdubo(){
+  const nome=document.getElementById('a-nome').value.trim();
+  const tipo=document.getElementById('a-tipo').value;
+  const qtd=parseFloat(document.getElementById('a-qtd').value)||0;
+  let ok=true;
+  if(!nome){document.getElementById('a-nome').classList.add('err');document.getElementById('err-a-nome').style.display='block';ok=false;}
+  else{document.getElementById('a-nome').classList.remove('err');document.getElementById('err-a-nome').style.display='none';}
+  if(!tipo){document.getElementById('a-tipo').classList.add('err');document.getElementById('err-a-tipo').style.display='block';ok=false;}
+  else{document.getElementById('a-tipo').classList.remove('err');document.getElementById('err-a-tipo').style.display='none';}
+  if(qtd<0||document.getElementById('a-qtd').value===''){document.getElementById('a-qtd').classList.add('err');document.getElementById('err-a-qtd').style.display='block';ok=false;}
+  else{document.getElementById('a-qtd').classList.remove('err');document.getElementById('err-a-qtd').style.display='none';}
+  if(!ok) return;
+
+  const obj={
+    id: editId||Date.now(),
+    nome, tipo,
+    npk: document.getElementById('a-npk').value.trim(),
+    fab: document.getElementById('a-fab').value.trim(),
+    qtd,
+    un:  document.getElementById('a-un').value,
+    min: parseFloat(document.getElementById('a-min').value)||0,
+    obs: document.getElementById('a-obs').value.trim(),
+  };
+
+  if(editId){
+    const i=db.adubos.findIndex(x=>x.id===editId);
+    db.adubos[i]=obj;
+    toast('Adubo atualizado!','s');
+  } else {
+    db.adubos.push(obj);
+    toast('Adubo cadastrado!','s');
+  }
+  save(); fecharModal(); renderAdubos();
+}
+
+function editarAdubo(id){ abrirModalAdubo(id); }
+
+function excluirAdubo(id){
+  if(!confirm('Excluir este adubo?')) return;
+  db.adubos=db.adubos.filter(a=>a.id!==id);
+  save(); renderAdubos(); toast('Adubo removido','e');
+}
+
+// ── MOVIMENTAÇÃO ──
+function selTipo(t){
+  movTipo=t;
+  document.getElementById('btn-entrada').classList.toggle('sel',t==='entrada');
+  document.getElementById('btn-saida').classList.toggle('sel',t==='saida');
+}
+
+function salvarMov(){
+  const aid=document.getElementById('mov-adubo').value;
+  const qtd=parseFloat(document.getElementById('mov-qtd').value);
+  let ok=true;
+  if(!aid){document.getElementById('mov-adubo').classList.add('err');document.getElementById('err-mov-adubo').style.display='block';ok=false;}
+  else{document.getElementById('mov-adubo').classList.remove('err');document.getElementById('err-mov-adubo').style.display='none';}
+  if(!qtd||qtd<=0){document.getElementById('mov-qtd').classList.add('err');document.getElementById('err-mov-qtd').style.display='block';ok=false;}
+  else{document.getElementById('mov-qtd').classList.remove('err');document.getElementById('err-mov-qtd').style.display='none';}
+  if(!ok) return;
+
+  const a=db.adubos.find(x=>x.id==aid);
+  if(movTipo==='saida'&&qtd>a.qtd){ toast('Quantidade maior que o estoque disponível!','e'); return; }
+
+  if(movTipo==='entrada') a.qtd+=qtd;
+  else a.qtd-=qtd;
+  a.qtd=Math.round(a.qtd*100)/100;
+
+  const now=new Date();
+  db.movs.push({
+    id:Date.now(), tipo:movTipo,
+    aduboId:a.id, aduboNome:a.nome,
+    qtd, un:document.getElementById('mov-un').value,
+    motivo:document.getElementById('mov-motivo').value.trim(),
+    resp:document.getElementById('mov-resp').value.trim(),
+    data:now.toLocaleDateString('pt-BR')+' '+now.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'}),
+  });
+
+  save();
+  document.getElementById('mov-qtd').value='';
+  document.getElementById('mov-motivo').value='';
+  document.getElementById('mov-resp').value='';
+  document.getElementById('mov-adubo').value='';
+  renderEstoque();
+  toast(`${movTipo==='entrada'?'Entrada':'Saída'} registrada!`, movTipo==='entrada'?'s':'w');
+}
+
+function limparHistorico(){
+  if(!confirm('Limpar todo o histórico de movimentações?')) return;
+  db.movs=[];
+  save(); renderHistorico(); toast('Histórico limpo','e');
+}
+
+// ── TOAST ──
+function toast(msg,tipo='s'){
+  const t=document.getElementById('toast');
+  t.textContent = tipo==='s'?'✅ '+msg : tipo==='e'?'❌ '+msg : '⚠️ '+msg;
+  t.className='toast '+tipo+' show';
+  setTimeout(()=>t.classList.remove('show'),3000);
+}
+
+// ── DADOS DEMO se vazio ──
+if(!db.adubos.length){
+  db.adubos=[
+    {id:1,nome:'Ureia 45%',tipo:'Nitrogenado',npk:'45-00-00',fab:'Yara Brasil',qtd:1200,un:'kg',min:500,obs:''},
+    {id:2,nome:'MAP Fosfato',tipo:'Fosfatado',npk:'11-52-00',fab:'Mosaic',qtd:350,un:'kg',min:300,obs:''},
+    {id:3,nome:'NPK 10-10-10',tipo:'NPK Composto',npk:'10-10-10',fab:'Nutrien',qtd:80,un:'sc',min:50,obs:''},
+    {id:4,nome:'Calcário Dolomítico',tipo:'Calcário',npk:'',fab:'AgroShop',qtd:8,un:'ton',min:10,obs:'Atenção: abaixo do mínimo'},
+    {id:5,nome:'Composto Orgânico',tipo:'Orgânico',npk:'',fab:'AgroShop',qtd:0,un:'kg',min:200,obs:''},
+  ];
+  db.movs=[
+    {id:1,tipo:'entrada',aduboId:1,aduboNome:'Ureia 45%',qtd:500,un:'kg',motivo:'Compra inicial',resp:'João Silva',data:'20/04/2026 08:30'},
+    {id:2,tipo:'saida',aduboId:1,aduboNome:'Ureia 45%',qtd:100,un:'kg',motivo:'Aplicação talhão A',resp:'João Silva',data:'21/04/2026 14:00'},
+    {id:3,tipo:'entrada',aduboId:3,aduboNome:'NPK 10-10-10',qtd:30,un:'sc',motivo:'Reposição',resp:'Maria Costa',data:'22/04/2026 09:15'},
+  ];
+  save();
+}
+
+// init
+renderDash();
+</script>
+</body>
+</html>
