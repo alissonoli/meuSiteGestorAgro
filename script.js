@@ -312,3 +312,103 @@ if(!db.adubos.length){
 
 // init
 renderDash();
+
+// ── SUPABASE CONFIG ──
+const SUPABASE_URL = "https://bovhzscieveyaicgvrzo.supabase.co"
+const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJvdmh6c2NpZXZleWFpY2d2cnpvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk5OTY0MDEsImV4cCI6MjA5NTU3MjQwMX0.CKi7MMklh4r78_KJZa_d--6cvgtw9wMaP8jqf1hggPY"
+const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY)
+
+// ── LOGIN ──
+async function fazerLogin() {
+  const usuario = document.getElementById('login-user').value.trim()
+  const senha   = document.getElementById('login-senha').value.trim()
+  const err     = document.getElementById('login-err')
+  err.style.display = 'none'
+
+  if (!usuario || !senha) {
+    err.style.display = 'block'
+    err.textContent = '⚠️ Preencha usuário e senha'
+    return
+  }
+
+  const { data, error } = await sb
+    .from('usuarios')
+    .select('*')
+    .eq('usuario', usuario)
+    .eq('senha', senha)
+    .single()
+
+  if (data) {
+    document.getElementById('tela-login').style.display = 'none'
+    document.getElementById('app').style.display = 'flex'
+    document.getElementById('nome-logado').textContent = data.nome
+    toast('Bem-vindo, ' + data.nome + '!', 's')
+  } else {
+    err.style.display = 'block'
+    err.textContent = '⚠️ Usuário ou senha incorretos'
+  }
+}
+
+// ── CADASTRO ──
+async function cadastrarUsuario() {
+  const nome    = document.getElementById('cad-nome').value.trim()
+  const usuario = document.getElementById('cad-user').value.trim()
+  const senha   = document.getElementById('cad-senha').value.trim()
+  const conf    = document.getElementById('cad-conf').value.trim()
+  const err     = document.getElementById('cad-err')
+  err.style.display = 'none'
+
+  if (!nome || !usuario || !senha || !conf) {
+    err.style.display = 'block'
+    err.textContent = '⚠️ Preencha todos os campos'
+    return
+  }
+  if (senha.length < 4) {
+    err.style.display = 'block'
+    err.textContent = '⚠️ Senha deve ter mínimo 4 caracteres'
+    return
+  }
+  if (senha !== conf) {
+    err.style.display = 'block'
+    err.textContent = '⚠️ As senhas não coincidem'
+    return
+  }
+  if (usuario.includes(' ')) {
+    err.style.display = 'block'
+    err.textContent = '⚠️ Usuário não pode ter espaços'
+    return
+  }
+
+  const { error } = await sb
+    .from('usuarios')
+    .insert({ nome, usuario, senha })
+
+  if (error) {
+    err.style.display = 'block'
+    err.textContent = error.code === '23505'
+      ? '⚠️ Esse usuário já existe'
+      : '⚠️ Erro ao cadastrar: ' + error.message
+  } else {
+    toast('Conta criada! Faça login.', 's')
+    mostrarLogin()
+    document.getElementById('login-user').value = usuario
+  }
+}
+
+// ── ALTERNAR PAINÉIS ──
+function mostrarCadastro() {
+  document.getElementById('painel-login').style.display = 'none'
+  document.getElementById('painel-cadastro').style.display = 'block'
+}
+function mostrarLogin() {
+  document.getElementById('painel-cadastro').style.display = 'none'
+  document.getElementById('painel-login').style.display = 'block'
+}
+function sair() {
+  document.getElementById('app').style.display = 'none'
+  document.getElementById('tela-login').style.display = 'flex'
+  document.getElementById('login-user').value = ''
+  document.getElementById('login-senha').value = ''
+  document.getElementById('login-err').style.display = 'none'
+  mostrarLogin()
+}
